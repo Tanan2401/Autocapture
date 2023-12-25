@@ -36,21 +36,20 @@ class PaintApp:
         self.start_y = event.y
 
     def draw_rectangle(self, event):
-        count += 1
         if self.current_rectangle:
             self.canvas.delete(self.current_rectangle)
         x, y = self.start_x, self.start_y
         current_x, current_y = event.x, event.y
-        self.current_rectangle = self.canvas.create_rectangle(x, y, current_x, current_y,outline="red",width=3, tags="rectangle" + str(count))
+        self.current_rectangle = self.canvas.create_rectangle(x, y, current_x, current_y,outline="red",width=3, tags="rectangle")
 
     def stop_drawing(self, event):
         self.current_rectangle = None
-        self.rectangles.append((self.start_x, self.start_y, event.x, event.y))
+        # self.rectangles.append((self.start_x, self.start_y, event.x, event.y))
         print(self.rectangles)
         
     def on_key_press(self,event):
         if(event.name == 'z' and keyboard.is_pressed('ctrl')):
-            self.canvas.delete("rectangle" +str(count-1))
+            # self.canvas.delete("rectangle" +str(count-1))
             print("ctrl + z")
     
     def open_image(self):
@@ -81,8 +80,9 @@ class PaintApp:
             
     def save_canvas(self):
          y_axis = 45
+         path_file = r"D:\Project\AutoCapture\img\filename.png"
          image = pyautogui.screenshot(region=(2, y_axis, img_width-2, img_height-3))
-         image.save("filename.png")
+         image.save(path_file)
          print("Canvas saved ")         
                   
 root = Tk()

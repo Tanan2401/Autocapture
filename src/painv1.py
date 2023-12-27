@@ -6,6 +6,7 @@ from win32api import GetMonitorInfo, MonitorFromPoint
 import pyperclip
 import pyautogui
 import keyboard
+import io
 white = (255, 255, 255)
 rectangles = [(0, 0, 0, 0)]
 class PaintApp:
@@ -44,7 +45,7 @@ class PaintApp:
             self.canvas.delete(self.current_rectangle)
         x, y = self.start_x, self.start_y
         print("drawing rectangle")
-        self.current_rectangle = self.canvas.create_rectangle(x, y, current_x, current_y,outline="red",width=3, tags="rectangle")           
+        self.current_rectangle = self.canvas.create_rectangle(x, y, current_x, current_y,outline="red",width=2, tags="rectangle")           
             
     def stop_drawing(self, event):
         print("Stop drawing rectangle")
@@ -57,6 +58,7 @@ class PaintApp:
         # lbn_img = Label(root,image=self.image_ref)
         # lbn_img.place(x= 0,y = 2)
         # self.image_ref = ImageTk.PhotoImage(img)
+        global filepath
         filepath = filedialog.askopenfilename(filetypes=filetypes)
         if filepath:
             global img_height, img_width, img
@@ -95,20 +97,38 @@ class PaintApp:
         self.canvas.create_image(0, 0, anchor=NW, image=self.image_ref) 
         if mode == 0:            
             for rectangle in rectangles:
-                print("Show rectangle"+ format(rectangle))
-                self.canvas.create_rectangle(rectangle,outline="red",width=3)  
+                print("Show rectangle Original"+ format(rectangle))
+                self.canvas.create_rectangle(rectangle,outline="red",width=2)  
                                   
+    # def save_canvas(self):
+    #     y_axis = 45
+    #     print("Zoom factor: " + format(zoom_factor))
+    #     path_file = r"D:\Project\AutoCapture\img\filename.png"
+    #     image = pyautogui.screenshot(region=(2, y_axis, img_width-2, img_height-3))
+    #     img_widthOut = int(img_width / zoom_factor)
+    #     img_heightOut = int(img_height / zoom_factor)
+    #     img_output = image.resize((img_widthOut, img_heightOut), Image.BICUBIC)
+    #     img_output.save(path_file)
+    #     print("Canvas saved ")         
     def save_canvas(self):
-        y_axis = 45
-        print("Zoom factor: " + format(zoom_factor))
-        path_file = r"D:\Project\AutoCapture\img\filename.png"
-        image = pyautogui.screenshot(region=(2, y_axis, img_width-2, img_height-3))
-        img_widthOut = int(img_width / zoom_factor)
-        img_heightOut = int(img_height / zoom_factor)
-        img_output = image.resize((img_widthOut, img_heightOut), Image.BICUBIC)
-        img_output.save(path_file)
-        print("Canvas saved ")         
-                  
+        output_path = "D:\Project\AutoCapture\img\output.png"
+        image = Image.open(filepath)
+        draw = ImageDraw.Draw(image)
+        # draw.rectangle((x, y, x + width, y + height), outline="red", width=2)
+        temptuple = self.rectangles
+        # if img_height > canvas_height
+            
+        for m_tuple in temptuple:
+            if img_height > canvas_height:
+                m_tuple = tuple([ value / zoom_factor for value in m_tuple])
+            draw.rectangle(m_tuple, outline="red", width=2)
+            image.save(output_path)
+            print("Show rectangle new"+ format(m_tuple))
+            
+        print("Saved file")
+        
+        
+                 
 root = Tk()
 # root.attributes('-fullscreen', True)
 root.state("zoomed")
@@ -123,6 +143,12 @@ print("The taskbar height is {}.".format(monitor_area[3]-work_area[3]))
 # print("The work_area full is " + format(work_area) )
 # print("The worksSpace height is " + str(canvas_height))
 # print("The worksSpace width is " + str(canvas_width))
+
+my_tuple = [(5, 3),(10,20)]
+
+by_five = tuple(5 * elem for elem in my_tuple)
+
+print(by_five)  # 👉️ (25, 15)
 
 
 app = PaintApp(root)

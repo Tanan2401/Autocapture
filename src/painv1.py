@@ -7,11 +7,13 @@ import pyperclip
 import pyautogui
 import keyboard
 white = (255, 255, 255)
+rectangles = [(0, 0, 0, 0)]
 class PaintApp:
     def __init__(self, root):
         self.root = root
         self.canvas = Canvas(root, width=canvas_width, height=canvas_height)
         self.canvas.pack()
+        # global rectangles
         self.rectangles = []
         self.current_rectangle = None
         self.start_x = None
@@ -25,33 +27,38 @@ class PaintApp:
         global count 
         self.menu = Menu(root)
         self.root.config(menu=self.menu)
-
         self.file_menu = Menu(self.menu)
         self.menu.add_cascade(label="File", menu=self.file_menu)
         self.file_menu.add_command(label="Open", command=self.open_image)
         self.file_menu.add_command(label="Save", command=self.save_canvas)
-
+            
     def start_drawing(self, event):
         self.start_x = event.x
         self.start_y = event.y
+        print("Start drawing rectangle")
+        print("Start Possition: x=" + format(self.start_x) + " y=" + format(self.start_y))
 
     def draw_rectangle(self, event):
+        current_x, current_y = event.x, event.y   
         if self.current_rectangle:
             self.canvas.delete(self.current_rectangle)
         x, y = self.start_x, self.start_y
-        current_x, current_y = event.x, event.y
-        self.current_rectangle = self.canvas.create_rectangle(x, y, current_x, current_y,outline="red",width=3, tags="rectangle")
-
+        print("drawing rectangle")
+        self.current_rectangle = self.canvas.create_rectangle(x, y, current_x, current_y,outline="red",width=3, tags="rectangle")           
+            
     def stop_drawing(self, event):
+        print("Stop drawing rectangle")
         self.current_rectangle = None
-        # self.rectangles.append((self.start_x, self.start_y, event.x, event.y))
-        print(self.rectangles)
+        self.rectangles.append((self.start_x, self.start_y, event.x, event.y))
+        self.show_rectangle(self.rectangles)
         
-    def on_key_press(self,event):
-        if(event.name == 'z' and keyboard.is_pressed('ctrl')):
-            # self.canvas.delete("rectangle" +str(count-1))
-            print("ctrl + z")
-    
+    def show_rectangle(self,rectangles):
+        print("Show rectangle")
+        self.canvas.delete("all")
+        for rectangle in rectangles:
+            print("Show rectangle"+ format(rectangle))
+            self.canvas.create_rectangle(rectangle,outline="red",width=3)  
+            
     def open_image(self):
         filetypes = (("Image files", "*.png;*.jpg;*.jpeg;*.gif"), ("All files", "*.*"))
         # lbn_img = Label(root,image=self.image_ref)
@@ -76,8 +83,16 @@ class PaintApp:
                 
             self.image_ref = ImageTk.PhotoImage(img)
             self.canvas.create_image(0, 0, anchor=NW, image=self.image_ref)                              
-            
-            
+        
+    def on_key_press(self,event):
+        if event.name == 'z' and keyboard.is_pressed('ctrl'):
+            i_lenTuple = len(self.rectangles)
+            if i_lenTuple > 0:
+                tempTuple = self.rectangles[:-1]
+                self.rectangles = tempTuple
+                self.show_rectangle(self.rectangles)
+                print("ctrl + z")
+                      
     def save_canvas(self):
          y_axis = 45
          path_file = r"D:\Project\AutoCapture\img\filename.png"
@@ -102,5 +117,14 @@ print("The taskbar height is {}.".format(monitor_area[3]-work_area[3]))
 
 
 app = PaintApp(root)
-
+# canvasrec= Canvas(root, width=canvas_width, height=canvas_height)
+# rectangles = [(681, 218, 815, 368),
+#                            (982, 480, 1048, 559),
+#                            (656, 514, 705, 583),
+#                            (909, 544, 1030, 666),
+#                            (510, 492, 585, 547),
+#                            (829, 491, 878, 548)]
+# for i in rectangles:
+#     print("Show rectangle"+ format(i))
+#     canvasrec.create_rectangle(i,outline="red",width=3)
 root.mainloop()

@@ -13,7 +13,7 @@ class PaintApp:
         self.root = root
         self.canvas = Canvas(root, width=canvas_width, height=canvas_height)
         self.canvas.pack()
-        # global rectangles
+        global rectangles
         self.rectangles = []
         self.current_rectangle = None
         self.start_x = None
@@ -50,14 +50,7 @@ class PaintApp:
         print("Stop drawing rectangle")
         self.current_rectangle = None
         self.rectangles.append((self.start_x, self.start_y, event.x, event.y))
-        self.show_rectangle(self.rectangles)
-        
-    def show_rectangle(self,rectangles):
-        print("Show rectangle")
-        self.canvas.delete("all")
-        for rectangle in rectangles:
-            print("Show rectangle"+ format(rectangle))
-            self.canvas.create_rectangle(rectangle,outline="red",width=3)  
+        self.show_canvas(self.rectangles,0)                 
             
     def open_image(self):
         filetypes = (("Image files", "*.png;*.jpg;*.jpeg;*.gif"), ("All files", "*.*"))
@@ -66,12 +59,13 @@ class PaintApp:
         # self.image_ref = ImageTk.PhotoImage(img)
         filepath = filedialog.askopenfilename(filetypes=filetypes)
         if filepath:
-            global img_height, img_width
+            global img_height, img_width, img
             img = Image.open(filepath)
             img_width, img_height = img.size
             print(img_height)
             print(canvas_height)
             if(img_height > canvas_height):
+                global zoom_factor
                 zoom_factor = (canvas_height - taskpar_height) / img_height
                 print(zoom_factor)               
                 img_width = int(img_width * zoom_factor)
@@ -82,7 +76,9 @@ class PaintApp:
                 img = zoomed_image
                 
             self.image_ref = ImageTk.PhotoImage(img)
-            self.canvas.create_image(0, 0, anchor=NW, image=self.image_ref)                              
+            # self.canvas.create_image(0, 0, anchor=NW, image=self.image_ref) 
+            self.rectangles = []              
+            self.show_canvas(self.rectangles,1)               
         
     def on_key_press(self,event):
         if event.name == 'z' and keyboard.is_pressed('ctrl'):
@@ -90,15 +86,28 @@ class PaintApp:
             if i_lenTuple > 0:
                 tempTuple = self.rectangles[:-1]
                 self.rectangles = tempTuple
-                self.show_rectangle(self.rectangles)
+                self.show_canvas(self.rectangles,0)
                 print("ctrl + z")
-                      
+    
+    def show_canvas(self,rectangles,mode):
+        print("Show rectangle")
+        self.canvas.delete("all")
+        self.canvas.create_image(0, 0, anchor=NW, image=self.image_ref) 
+        if mode == 0:            
+            for rectangle in rectangles:
+                print("Show rectangle"+ format(rectangle))
+                self.canvas.create_rectangle(rectangle,outline="red",width=3)  
+                                  
     def save_canvas(self):
-         y_axis = 45
-         path_file = r"D:\Project\AutoCapture\img\filename.png"
-         image = pyautogui.screenshot(region=(2, y_axis, img_width-2, img_height-3))
-         image.save(path_file)
-         print("Canvas saved ")         
+        y_axis = 45
+        print("Zoom factor: " + format(zoom_factor))
+        path_file = r"D:\Project\AutoCapture\img\filename.png"
+        image = pyautogui.screenshot(region=(2, y_axis, img_width-2, img_height-3))
+        img_widthOut = int(img_width / zoom_factor)
+        img_heightOut = int(img_height / zoom_factor)
+        img_output = image.resize((img_widthOut, img_heightOut), Image.BICUBIC)
+        img_output.save(path_file)
+        print("Canvas saved ")         
                   
 root = Tk()
 # root.attributes('-fullscreen', True)

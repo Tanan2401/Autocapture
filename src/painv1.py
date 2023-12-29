@@ -3,10 +3,10 @@ from tkinter import filedialog
 from tkinter import PhotoImage
 from PIL import Image, ImageTk ,ImageGrab , ImageDraw, EpsImagePlugin
 from win32api import GetMonitorInfo, MonitorFromPoint
-import pyperclip
-import pyautogui
 import keyboard
-import io
+from openpyxl import load_workbook
+from openpyxl.drawing.image import Image as XLImage
+import win32com.client as win32
 white = (255, 255, 255)
 rectangles = [(0, 0, 0, 0)]
 class PaintApp:
@@ -25,7 +25,6 @@ class PaintApp:
         self.canvas.bind("<B1-Motion>", self.draw_rectangle)
         self.canvas.bind("<ButtonRelease-1>", self.stop_drawing)
         keyboard.on_press(self.on_key_press)
-        global count 
         self.menu = Menu(root)
         self.root.config(menu=self.menu)
         self.file_menu = Menu(self.menu)
@@ -45,7 +44,7 @@ class PaintApp:
             self.canvas.delete(self.current_rectangle)
         x, y = self.start_x, self.start_y
         print("drawing rectangle")
-        self.current_rectangle = self.canvas.create_rectangle(x, y, current_x, current_y,outline="red",width=2, tags="rectangle")           
+        self.current_rectangle = self.canvas.create_rectangle(x, y, current_x, current_y,outline="red",width=2, tags="rectangle1")           
             
     def stop_drawing(self, event):
         print("Stop drawing rectangle")
@@ -61,26 +60,29 @@ class PaintApp:
         global filepath
         filepath = filedialog.askopenfilename(filetypes=filetypes)
         if filepath:
-            global img_height, img_width, img
+            global img_height, img_width, img, zoom_factor
+            zoom_factor = 0
             img = Image.open(filepath)
             img_width, img_height = img.size
-            print(img_height)
-            print(canvas_height)
+            print("Img height orignal: " + format(img_height))
+            print("Img width orignal: " + format(img_width))
+            print("Canvas height: " + format(canvas_height))
             if(img_height > canvas_height):
-                global zoom_factor
                 zoom_factor = (canvas_height - taskpar_height) / img_height
                 print(zoom_factor)               
                 img_width = int(img_width * zoom_factor)
                 img_height = int(img_height * zoom_factor)
-                print("Width New: " + format(img_width))
-                print("Height New: " + format(img_height))
+                print("Img width New: " + format(img_width))
+                print("Img height New: " + format(img_height))
                 zoomed_image = img.resize((img_width, img_height), Image.BICUBIC)
                 img = zoomed_image
                 
             self.image_ref = ImageTk.PhotoImage(img)
-            # self.canvas.create_image(0, 0, anchor=NW, image=self.image_ref) 
-            self.rectangles = []              
-            self.show_canvas(self.rectangles,1)               
+            self.canvas.create_image(0, 0, anchor=NW, image=self.image_ref) 
+            self.rectangles = []
+            self.canvas.delete("rectangle1")       
+            self.canvas.delete("rectangle2")        
+        
         
     def on_key_press(self,event):
         if event.name == 'z' and keyboard.is_pressed('ctrl'):
@@ -98,7 +100,7 @@ class PaintApp:
         if mode == 0:            
             for rectangle in rectangles:
                 print("Show rectangle Original"+ format(rectangle))
-                self.canvas.create_rectangle(rectangle,outline="red",width=2)  
+                self.canvas.create_rectangle(rectangle,outline="red",width=2,tag = "rectangle1")  
                                   
     # def save_canvas(self):
     #     y_axis = 45
@@ -108,7 +110,7 @@ class PaintApp:
     #     img_widthOut = int(img_width / zoom_factor)
     #     img_heightOut = int(img_height / zoom_factor)
     #     img_output = image.resize((img_widthOut, img_heightOut), Image.BICUBIC)
-    #     img_output.save(path_file)
+    #     img_output.save(path_file)s
     #     print("Canvas saved ")         
     def save_canvas(self):
         output_path = "D:\Project\AutoCapture\img\output.png"
@@ -119,15 +121,60 @@ class PaintApp:
         # if img_height > canvas_height
             
         for m_tuple in temptuple:
-            if img_height > canvas_height:
+            print("Img height: " + format(img_height))
+            print("Canvas height: " + format(canvas_height))
+            if zoom_factor > 0:
                 m_tuple = tuple([ value / zoom_factor for value in m_tuple])
             draw.rectangle(m_tuple, outline="red", width=2)
-            image.save(output_path)
-            print("Show rectangle new"+ format(m_tuple))
             
-        print("Saved file")
+        image.save(output_path)
+        print("Show rectangle new"+ format(m_tuple))
+
+        image_path = output_path
+        excel_path = 'D:\Project\AutoCapture\docs/Book2.xlsx'
+        # Get the active sheet (first sheet by default)
+        workbook = load_workbook(excel_path)
+        sheet = workbook.active
         
+        # Create an image object from the image file
+        image = XLImage(image_path)
         
+        # Add image to the worksheet
+        sheet.add_image(image, 'A2')
+        
+        # Save the modified workbook
+        workbook.save(excel_path)  
+        
+class Exel:
+    def __init__(self, pathname):
+        self.excel_app = win32.gencache.EnsureDispatch('Excel.Application')
+        self.pathname = pathname
+        self.workbook = self.openFile()
+        self.VbaRun()
+        self.closeFile()
+        print("init")
+    
+    def openFile(self):
+        print("Open file")
+        workbook = self.excel_app.Workbooks.Open(self.pathname)
+        return workbook
+    
+    def VbaRun(self):
+        vbaCode = '''
+        Sub MyMacro()
+            MsgBox "Hello from VBA!"
+        End Sub
+        '''
+        vba_module = self.workbook.VBProject.VBComponents.Add(1)
+        vba_module.CodeModule.AddFromString(vbaCode)
+        self.excel_app.Run("MyMacro")
+        print("Run VBA")
+    
+    def closeFile(self):
+        print("Close file")
+        self.workbook.Close(SaveChanges=True)
+        
+            
                  
 root = Tk()
 # root.attributes('-fullscreen', True)
@@ -144,22 +191,8 @@ print("The taskbar height is {}.".format(monitor_area[3]-work_area[3]))
 # print("The worksSpace height is " + str(canvas_height))
 # print("The worksSpace width is " + str(canvas_width))
 
-my_tuple = [(5, 3),(10,20)]
-
-by_five = tuple(5 * elem for elem in my_tuple)
-
-print(by_five)  # 👉️ (25, 15)
-
 
 app = PaintApp(root)
-# canvasrec= Canvas(root, width=canvas_width, height=canvas_height)
-# rectangles = [(681, 218, 815, 368),
-#                            (982, 480, 1048, 559),
-#                            (656, 514, 705, 583),
-#                            (909, 544, 1030, 666),
-#                            (510, 492, 585, 547),
-#                            (829, 491, 878, 548)]
-# for i in rectangles:
-#     print("Show rectangle"+ format(i))
-#     canvasrec.create_rectangle(i,outline="red",width=3)
+# ex  = Exel("D:\Project\AutoCapture\docs\Book1.xlsx")
+
 root.mainloop()

@@ -7,8 +7,8 @@ from win32api import GetMonitorInfo, MonitorFromPoint
 import pyautogui
 from screeninfo import get_monitors
 import pygetwindow as gw
+from datetime import datetime
 
- 
 font_text = ("normal",14)
 font_text1 = ("normal",10)
 list_mode = ["Mode1", "Mode2"]
@@ -29,7 +29,6 @@ class Screen1:
         self.modeRegion  = None
         status1 = "         "
         status2 = "                   "
-        
         status1 = format(work_area[2]) + "x" + format(work_area[3])
         self.lbn_Mode1 = ttk.Label(root, text="Mode1:" + status1, borderwidth=1, relief="solid", font=font_text)
         self.lbn_Mode1.place(x = 0, y = 5)
@@ -65,12 +64,13 @@ class Screen1:
             
     def on_key_press(self,event):
         pos = []
+        # Capture region
         if event.name == "f3":
             if self.modeRegion == 1:
                 self.start_x = self.monitor.x + self.start_x
             pos = [self.start_x,self.start_y,self.width,self.height]
             self.captureRegion(pos)
-            
+        # Capture first monitor    
         if event.name == "f2" and keyboard.is_pressed("shift"):
             monitors = get_monitors()
             monitor = monitors[0] 
@@ -79,7 +79,7 @@ class Screen1:
             pos = [monitor.x,monitor.y,work_area[2],work_area[3]]
             self.captureRegion(pos)
             print("Shift F2 is pressed")
-            
+        # Capture secondary monitor      
         elif event.name == "f2":
             monitors = get_monitors()
             monitor = monitors[1] 
@@ -106,7 +106,10 @@ class Screen1:
             }
             print(region)
             screenshot = sct.grab(region)
-            path = "D:\\Project\\AutoCapture\\img\\my_screenshot" + format(self.count) +".png"
+            now = datetime.now()
+            formatted_time = now.strftime("%Y-%m-%d %H.%M.%S")
+            print(formatted_time)
+            path = "D:\\Project\\AutoCapture\\img\\" + format(formatted_time) +".png"
             mss.tools.to_png(screenshot.rgb, screenshot.size, output=path)
             print("Capture Region" + format(self.count))
             self.count += 1
